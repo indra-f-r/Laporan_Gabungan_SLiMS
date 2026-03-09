@@ -238,6 +238,63 @@ while ($r = $resVG->fetch_assoc()) {
 }
 
 /* ======================
+ANALISIS JAM SIBUK
+====================== */
+
+$jam_labels=[];
+$data_jam_pengunjung=[];
+$data_jam_transaksi=[];
+
+/* loop jam operasional */
+for($h=6;$h<=16;$h++){
+
+$jam=sprintf("%02d",$h);
+
+/* pengunjung */
+$q="
+SELECT COUNT(*) total
+FROM visitor_count
+WHERE HOUR(checkin_date)=?
+AND DATE(checkin_date) BETWEEN ? AND ?
+";
+
+$stmt=$dbs->prepare($q);
+$stmt->bind_param("iss",$h,$tanggal_mulai,$tanggal_akhir);
+$stmt->execute();
+$r=$stmt->get_result()->fetch_assoc();
+$total_pengunjung=(int)$r['total'];
+
+/* transaksi */
+$q2="
+SELECT COUNT(*) total
+FROM loan
+WHERE HOUR(input_date)=?
+AND input_date BETWEEN ? AND ?
+";
+
+$stmt2=$dbs->prepare($q2);
+$stmt2->bind_param("iss",$h,$tanggal_mulai,$tanggal_akhir);
+$stmt2->execute();
+$r2=$stmt2->get_result()->fetch_assoc();
+$total_transaksi=(int)$r2['total'];
+
+/* simpan */
+$jam_labels[]=$jam.":00";
+$data_jam_pengunjung[]=$total_pengunjung;
+$data_jam_transaksi[]=$total_transaksi;
+
+}
+
+/* cari jam puncak */
+
+$max_pengunjung=max($data_jam_pengunjung);
+$jam_puncak_pengunjung=$jam_labels[array_search($max_pengunjung,$data_jam_pengunjung)];
+
+$max_transaksi=max($data_jam_transaksi);
+$jam_puncak_transaksi=$jam_labels[array_search($max_transaksi,$data_jam_transaksi)];
+
+
+/* ======================
 DASHBOARD STATISTIK
 ====================== */
 
@@ -1168,6 +1225,42 @@ Perubahan : <b><?= $visit_diff ?> (<?= $visit_percent ?>%)</b>
 
 </div>
 
+<div class="section">
+
+<h3>Analisis Jam Sibuk</h3>
+
+<div class="dashboard">
+
+<div class="dashboard-card">
+<div class="dashboard-title">Total Pengunjung</div>
+<div class="dashboard-value"><?= array_sum($data_jam_pengunjung) ?></div>
+</div>
+
+<div class="dashboard-card">
+<div class="dashboard-title">Total Transaksi</div>
+<div class="dashboard-value"><?= array_sum($data_jam_transaksi) ?></div>
+</div>
+
+<div class="dashboard-card">
+<div class="dashboard-title">Jam Puncak Pengunjung</div>
+<div class="dashboard-value"><?= $jam_puncak_pengunjung ?></div>
+</div>
+
+<div class="dashboard-card">
+<div class="dashboard-title">Jam Puncak Transaksi</div>
+<div class="dashboard-value"><?= $jam_puncak_transaksi ?></div>
+</div>
+
+</div>
+
+<div style="margin-top:20px">
+
+<canvas id="chartJamSibuk" height="120"></canvas>
+
+</div>
+
+</div>
+
 <h3>Kalender Kunjungan</h3>
 
 <?php renderCalendar($data_visit,$start,$end); ?>
@@ -1338,6 +1431,42 @@ return legendItem.index < 5;
 }
 }
 }
+}
+}
+
+});
+
+new Chart(document.getElementById('chartJamSibuk'),{
+
+type:'line',
+
+data:{
+labels: <?= json_encode($jam_labels) ?>,
+datasets:[
+{
+label:'Pengunjung',
+data: <?= json_encode($data_jam_pengunjung) ?>,
+borderColor:'#1E88E5',
+backgroundColor:'rgba(30,136,229,0.1)',
+tension:0.3
+},
+{
+label:'Transaksi',
+data: <?= json_encode($data_jam_transaksi) ?>,
+borderColor:'#43A047',
+backgroundColor:'rgba(67,160,71,0.1)',
+tension:0.3
+}
+]
+},
+
+options:{
+responsive:true,
+plugins:{
+legend:{ position:'bottom' }
+},
+scales:{
+y:{ beginAtZero:true }
 }
 }
 
