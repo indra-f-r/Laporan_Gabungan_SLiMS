@@ -526,27 +526,31 @@ page-break-inside:avoid;
 }
 
 .calendar-cell{
-height:80px;
+height:55px;
 position:relative;
 }
 
 .calendar-day{
 position:absolute;
-top:4px;
-left:6px;
-font-size:16px;
+top:3px;
+left:5px;
+font-size:13px;
 }
 
 .calendar-total{
 position:absolute;
-bottom:6px;
-right:6px;
+bottom:4px;
+right:5px;
 font-weight:bold;
-font-size:20px;
+font-size:16px;
 }
 
 table{
 page-break-inside:avoid;
+}
+
+table{
+font-size:12px;
 }
 
 .chart-top{
