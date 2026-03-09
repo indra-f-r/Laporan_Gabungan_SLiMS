@@ -245,40 +245,63 @@ $jam_labels=[];
 $data_jam_pengunjung=[];
 $data_jam_transaksi=[];
 
-/* loop jam operasional */
+/* ======================
+AMBIL DATA PENGUNJUNG PER JAM
+====================== */
+
+$q_pengunjung="
+SELECT HOUR(checkin_date) jam, COUNT(*) total
+FROM visitor_count
+WHERE checkin_date BETWEEN ? AND ?
+GROUP BY jam
+";
+
+$stmtP=$dbs->prepare($q_pengunjung);
+$stmtP->bind_param("ss",$tanggal_mulai,$tanggal_akhir);
+$stmtP->execute();
+$resP=$stmtP->get_result();
+
+$data_pengunjung_jam=[];
+
+while($r=$resP->fetch_assoc()){
+$data_pengunjung_jam[(int)$r['jam']] = (int)$r['total'];
+}
+
+
+/* ======================
+AMBIL DATA TRANSAKSI PER JAM
+====================== */
+
+$q_transaksi="
+SELECT HOUR(input_date) jam, COUNT(*) total
+FROM loan
+WHERE input_date BETWEEN ? AND ?
+GROUP BY jam
+";
+
+$stmtT=$dbs->prepare($q_transaksi);
+$stmtT->bind_param("ss",$tanggal_mulai,$tanggal_akhir);
+$stmtT->execute();
+$resT=$stmtT->get_result();
+
+$data_transaksi_jam=[];
+
+while($r=$resT->fetch_assoc()){
+$data_transaksi_jam[(int)$r['jam']] = (int)$r['total'];
+}
+
+
+/* ======================
+SUSUN DATA JAM OPERASIONAL
+====================== */
+
 for($h=6;$h<=16;$h++){
 
 $jam=sprintf("%02d",$h);
 
-/* pengunjung */
-$q="
-SELECT COUNT(*) total
-FROM visitor_count
-WHERE HOUR(checkin_date)=?
-AND DATE(checkin_date) BETWEEN ? AND ?
-";
+$total_pengunjung = $data_pengunjung_jam[$h] ?? 0;
+$total_transaksi  = $data_transaksi_jam[$h] ?? 0;
 
-$stmt=$dbs->prepare($q);
-$stmt->bind_param("iss",$h,$tanggal_mulai,$tanggal_akhir);
-$stmt->execute();
-$r=$stmt->get_result()->fetch_assoc();
-$total_pengunjung=(int)$r['total'];
-
-/* transaksi */
-$q2="
-SELECT COUNT(*) total
-FROM loan
-WHERE HOUR(input_date)=?
-AND input_date BETWEEN ? AND ?
-";
-
-$stmt2=$dbs->prepare($q2);
-$stmt2->bind_param("iss",$h,$tanggal_mulai,$tanggal_akhir);
-$stmt2->execute();
-$r2=$stmt2->get_result()->fetch_assoc();
-$total_transaksi=(int)$r2['total'];
-
-/* simpan */
 $jam_labels[]=$jam.":00";
 $data_jam_pengunjung[]=$total_pengunjung;
 $data_jam_transaksi[]=$total_transaksi;
