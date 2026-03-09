@@ -24,6 +24,33 @@ FILTER TANGGAL
 $tanggal_mulai = $_GET['tanggal_mulai'] ?? date('Y-m-01');
 $tanggal_akhir = $_GET['tanggal_akhir'] ?? date('Y-m-d');
 
+$tahun_laporan = date('Y', strtotime($tanggal_mulai));
+
+$bulan_mulai = date('n', strtotime($tanggal_mulai));
+$bulan_akhir = date('n', strtotime($tanggal_akhir));
+
+$selisih_bulan = $bulan_akhir - $bulan_mulai;
+
+if($bulan_mulai == $bulan_akhir){
+
+    $nama_periode = "Bulan ".bulan_local($tanggal_mulai);
+
+}
+elseif($selisih_bulan <= 2){
+
+    $nama_periode = "Triwulan ".ceil($bulan_mulai/3)." ".$tahun_laporan;
+
+}
+elseif($selisih_bulan <= 5){
+
+    $nama_periode = "Semester ".ceil($bulan_mulai/6)." ".$tahun_laporan;
+
+}
+else{
+
+    $nama_periode = "Tahun ".$tahun_laporan;
+
+}
 
 /* ======================
 PERIODE SEBELUMNYA
@@ -45,8 +72,31 @@ $prev_end_date   = $prev_end->format('Y-m-d');
 
 
 /* ======================
-TOTAL PEMINJAMAN
+TOTAL KUNJUNGAN
 ====================== */
+
+$sql_visit="
+SELECT COUNT(*) total
+FROM visitor_count
+WHERE checkin_date BETWEEN ? AND ?
+";
+
+$stmtV1=$dbs->prepare($sql_visit);
+$stmtV1->bind_param("ss",$tanggal_mulai,$tanggal_akhir);
+$stmtV1->execute();
+$resV1=$stmtV1->get_result();
+$visit_now=$resV1->fetch_assoc()['total'];
+
+$stmtV2=$dbs->prepare($sql_visit);
+$stmtV2->bind_param("ss",$prev_start_date,$prev_end_date);
+$stmtV2->execute();
+$resV2=$stmtV2->get_result();
+$visit_prev=$resV2->fetch_assoc()['total'];
+
+$visit_diff=$visit_now-$visit_prev;
+$visit_percent=$visit_prev>0 ? round(($visit_diff/$visit_prev)*100,2):100;
+
+
 
 $sql_total="
 SELECT COUNT(*) total
@@ -69,6 +119,25 @@ $total_prev=$res2->fetch_assoc()['total'];
 $diff=$total_now-$total_prev;
 $percent=$total_prev>0 ? round(($diff/$total_prev)*100,2):100;
 
+if($diff > 0){
+$analisa_pinjam="Terjadi peningkatan peminjaman sebesar ".abs($percent)."% dibanding periode sebelumnya.";
+}
+elseif($diff < 0){
+$analisa_pinjam="Terjadi penurunan peminjaman sebesar ".abs($percent)."% dibanding periode sebelumnya.";
+}
+else{
+$analisa_pinjam="Jumlah peminjaman relatif stabil dibanding periode sebelumnya.";
+}
+
+if($visit_diff > 0){
+$analisa_visit="Terjadi peningkatan kunjungan sebesar ".abs($visit_percent)."% dibanding periode sebelumnya.";
+}
+elseif($visit_diff < 0){
+$analisa_visit="Terjadi penurunan kunjungan sebesar ".abs($visit_percent)."% dibanding periode sebelumnya.";
+}
+else{
+$analisa_visit="Jumlah kunjungan relatif stabil dibanding periode sebelumnya.";
+}
 
 /* ======================
 PEMINJAMAN PER HARI
@@ -115,6 +184,57 @@ $data_visit=[];
 
 while($r=$res_visit->fetch_assoc()){
 $data_visit[$r['tgl']]=$r['total'];
+}
+
+/* ======================
+CHART KUNJUNGAN
+====================== */
+
+$q_chart_visit="
+SELECT DATE(checkin_date) tgl,COUNT(*) total
+FROM visitor_count
+WHERE checkin_date BETWEEN ? AND ?
+GROUP BY DATE(checkin_date)
+ORDER BY tgl
+";
+
+$stmtV=$dbs->prepare($q_chart_visit);
+$stmtV->bind_param("ss",$tanggal_mulai,$tanggal_akhir);
+$stmtV->execute();
+$resV=$stmtV->get_result();
+
+$label_visit=[];
+$data_visit_chart=[];
+
+while($r=$resV->fetch_assoc()){
+$label_visit[]=$r['tgl'];
+$data_visit_chart[]=(int)$r['total'];
+}
+
+/* ======================
+CHART DISTRIBUSI PENGUNJUNG (PIN)
+====================== */
+
+$q_chart_visit_group = "
+SELECT m.pin, COUNT(*) total
+FROM visitor_count v
+JOIN member m ON v.member_id = m.member_id
+WHERE v.checkin_date BETWEEN ? AND ?
+GROUP BY m.pin
+ORDER BY total DESC
+";
+
+$stmtVG = $dbs->prepare($q_chart_visit_group);
+$stmtVG->bind_param("ss",$tanggal_mulai,$tanggal_akhir);
+$stmtVG->execute();
+$resVG = $stmtVG->get_result();
+
+$label_visit_group = [];
+$data_visit_group  = [];
+
+while ($r = $resVG->fetch_assoc()) {
+    $label_visit_group[] = $r['pin'] ?: 'Tanpa PIN';
+    $data_visit_group[]  = (int)$r['total'];
 }
 
 /* ======================
@@ -219,6 +339,24 @@ $stmt6=$dbs->prepare($q_buku);
 $stmt6->bind_param("ss",$tanggal_mulai,$tanggal_akhir);
 $stmt6->execute();
 $buku_terlaris=$stmt6->get_result();
+
+/* ======================
+PUSTAKA DIBACA
+====================== */
+
+$q_read="
+SELECT title,COUNT(*) total
+FROM read_counter
+WHERE created_at BETWEEN ? AND ?
+GROUP BY title
+ORDER BY total DESC
+LIMIT 10
+";
+
+$stmtR=$dbs->prepare($q_read);
+$stmtR->bind_param("ss",$tanggal_mulai,$tanggal_akhir);
+$stmtR->execute();
+$top_read=$stmtR->get_result();
 
 /* ======================
 CHART PEMINJAMAN
@@ -411,6 +549,11 @@ table{
 page-break-inside:avoid;
 }
 
+.chart-top{
+margin-top:10px;
+font-size:13px;
+}
+
 @media print{
 
 .filter-box{display:none;}
@@ -430,12 +573,190 @@ margin-bottom:20px;
 
 }
 
+@media print{
+
+.section-pinjam{
+page-break-inside:auto;
+margin-top:10px;
+}
+
+}
+
+@media print{
+
+.chart-row{
+margin-top:10px;
+margin-bottom:10px;
+}
+
+}
+
+@media print{
+
+.chart-row{
+page-break-inside:auto;
+break-inside:auto;
+}
+
+.chart-box{
+break-inside:avoid;
+}
+
+}
+
+.popup-overlay{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.4);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:9999;
+}
+
+.popup-box{
+background:white;
+padding:25px;
+width:400px;
+border-radius:6px;
+}
+
+.popup-box input{
+width:100%;
+margin-bottom:10px;
+padding:6px;
+border:1px solid #ccc;
+border-radius:4px;
+}
+
+.area-ttd{
+height:110px;
+margin:5px 0;
+display:flex;
+align-items:flex-end;
+justify-content:center;
+}
+
+.img-ttd{
+max-height:110px;
+max-width:260px;
+object-fit:contain;
+}
+
+#lembar-pengesahan{
+page-break-after:always;
+}
+
+#lembar-pengesahan{
+display:none;
+}
+
+@media print{
+
+#lembar-pengesahan{
+display:block;
+page-break-after:always;
+}
+
+}
+
+@media print{
+
+.section table{
+page-break-inside:avoid;
+break-inside:avoid;
+}
+
+.section h4{
+page-break-after:avoid;
+}
+
+.section{
+page-break-inside:avoid;
+}
+
+}
 </style>
 
 
 <div class="menuBox">
 <div class="menuBoxInner reportIcon">
 <div class="container">
+
+<!-- LEMBAR PENGESAHAN -->
+
+<div id="lembar-pengesahan" style="page-break-before:always;display:none">
+
+<h2 style="text-align:center;margin-top:80px">
+
+<?= strtoupper($sysconf['library_name']) ?>
+
+</h2>
+
+<div style="text-align:center;font-size:16px;margin-top:-5px">
+
+<?= $sysconf['library_subname'] ?>
+
+</div>
+
+<h3 style="text-align:center;margin-top:25px">
+
+LEMBAR PENGESAHAN
+
+</h3>
+
+<div style="text-align:center;font-size:17px;margin-top:15px">
+
+Laporan Statistik Perpustakaan
+
+</div>
+
+<div style="text-align:center;font-size:16px;margin-top:8px">
+
+<?= $nama_periode ?>
+
+</div>
+
+<div style="display:flex;justify-content:space-between">
+
+<div style="width:40%;text-align:center">
+
+Mengetahui,<br>
+<span id="kepala_jabatan_text"></span>
+
+<div class="area-ttd">
+<img id="tte_kepala" class="img-ttd">
+</div>
+
+<div id="kepala_identitas">
+<b id="kepala_nama_text"></b><br>
+<span id="kepala_nip_text"></span>
+</div>
+
+</div>
+
+<div style="width:40%;text-align:center">
+
+<span id="kota_text"></span>, <?= date('d') ?> <?= bulan_local(date('Y-m-d')) ?><br>
+<span id="petugas_jabatan_text"></span>
+
+<div class="area-ttd">
+<img id="tte_petugas" class="img-ttd">
+</div>
+
+<div id="petugas_identitas">
+<b id="petugas_nama_text"></b><br>
+<span id="petugas_nip_text"></span>
+</div>
+
+</div>
+
+</div>
+
+</div>
 
 <div class="filter-box">
 
@@ -451,7 +772,7 @@ margin-bottom:20px;
 <input type="date" name="tanggal_akhir" value="<?= $tanggal_akhir ?>">
 
 <button class="s-btn btn btn-primary">Tampilkan</button>
-<button type="button" onclick="window.print()" class="s-btn btn btn-default">Print</button>
+<button type="button" onclick="bukaFormPengesahan()" class="s-btn btn btn-default">Print</button>
 
 </form>
 
@@ -560,7 +881,7 @@ margin-bottom:20px;
 
 
 
-<div class="section">
+<div class="section section-pinjam">
 
 <h3>Laporan Peminjaman</h3>
 
@@ -572,32 +893,111 @@ Perubahan : <b><?= $diff ?> (<?= $percent ?>%)</b>
 
 </p>
 
+<p><i><?= $analisa_pinjam ?></i></p>
+
 <h3>Distribusi Peminjaman</h3>
 
 <div class="chart-row">
 
-<div class="chart-row">
-
 <div class="chart-box">
+
 <h4>Klasifikasi DDC</h4>
+
 <canvas id="chartKlas"></canvas>
+
+<div class="chart-top">
+<?php
+
+$items=[];
+foreach($label_klas as $i=>$label){
+$items[]=['label'=>$label,'total'=>$data_klas[$i]];
+}
+
+usort($items,function($a,$b){
+return $b['total'] <=> $a['total'];
+});
+
+$top=array_slice($items,0,3);
+
+?>
+
+<ol>
+<?php foreach($top as $r){ ?>
+<li><?= $r['label'] ?> — <?= $r['total'] ?></li>
+<?php } ?>
+</ol>
+
 </div>
 
+</div>
+
+
 <div class="chart-box">
+
 <h4>Tipe Koleksi</h4>
+
 <canvas id="chartType"></canvas>
+
+<div class="chart-top">
+<?php
+
+$items=[];
+foreach($label_type as $i=>$label){
+$items[]=['label'=>$label,'total'=>$data_type[$i]];
+}
+
+usort($items,function($a,$b){
+return $b['total'] <=> $a['total'];
+});
+
+$top=array_slice($items,0,3);
+
+?>
+
+<ol>
+<?php foreach($top as $r){ ?>
+<li><?= $r['label'] ?> — <?= $r['total'] ?></li>
+<?php } ?>
+</ol>
+
+</div>
+
 </div>
 
 <div class="chart-box">
+
 <h4>Grup Peminjam</h4>
+
 <canvas id="chartGroup"></canvas>
+
+<div class="chart-top">
+<?php
+
+$items=[];
+foreach($label_group as $i=>$label){
+$items[]=['label'=>$label,'total'=>$data_group[$i]];
+}
+
+usort($items,function($a,$b){
+return $b['total'] <=> $a['total'];
+});
+
+$top=array_slice($items,0,3);
+
+?>
+
+<ol>
+<?php foreach($top as $r){ ?>
+<li><?= $r['label'] ?> — <?= $r['total'] ?></li>
+<?php } ?>
+</ol>
+
+</div>
+
 </div>
 
 </div>
 </div>
-</div>
-
-
 
 <?php
 
@@ -660,9 +1060,6 @@ while($current <= $end){
 
 $bulan_awal=new DateTime($current->format('Y-m-01'));
 $bulan_akhir=new DateTime($current->format('Y-m-t'));
-
-if($bulan_awal < $start) $bulan_awal=clone $start;
-if($bulan_akhir > $end) $bulan_akhir=clone $end;
 
 ?>
 
@@ -743,6 +1140,30 @@ $current->modify('first day of next month');
 
 <div class="section">
 
+<div class="section">
+
+<h3 style="margin-top:40px">Laporan Kunjungan</h3>
+
+<p>
+
+Total Kunjungan : <b><?= $visit_now ?></b><br>
+Periode Sebelumnya : <b><?= $visit_prev ?></b><br>
+Perubahan : <b><?= $visit_diff ?> (<?= $visit_percent ?>%)</b>
+
+</p>
+
+<p><i><?= $analisa_visit ?></i></p>
+
+<h3>Distribusi Pengunjung</h3>
+
+<div style="width:420px;margin:auto">
+
+<canvas id="chartVisitGroup"></canvas>
+
+</div>
+
+</div>
+
 <h3>Kalender Kunjungan</h3>
 
 <?php renderCalendar($data_visit,$start,$end); ?>
@@ -777,11 +1198,37 @@ $current->modify('first day of next month');
 
 </table>
 
+<div class="section">
+
+<h3>Pustaka Dibaca di Tempat</h3>
+
+<table class="s-table table table-bordered">
+
+<tr>
+<th>No</th>
+<th>Judul</th>
+<th>Total Dibaca</th>
+</tr>
+
+<?php $n=1; while($r=$top_read->fetch_assoc()){ ?>
+
+<tr>
+<td><?= $n++ ?></td>
+<td><?= $r['title'] ?></td>
+<td><?= $r['total'] ?></td>
+</tr>
+
+<?php } ?>
+
+</table>
+
+</div>
 </div>
 
 
 </div>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
@@ -828,7 +1275,6 @@ responsive:true
 
 
 /* Chart Klasifikasi */
-
 const klasLabels = <?= json_encode($label_klas) ?>;
 const klasData   = <?= json_encode($data_klas) ?>;
 
@@ -859,5 +1305,158 @@ makeChart(
 ['#3B82F6','#EF4444','#10B981','#F59E0B','#8B5CF6','#EC4899','#14B8A6','#F97316','#6366F1','#84CC16']
 );
 
+
+new Chart(document.getElementById('chartVisitGroup'),{
+
+type:'doughnut',
+
+data:{
+labels: <?= json_encode($label_visit_group) ?>,
+datasets:[{
+data: <?= json_encode($data_visit_group) ?>,
+backgroundColor:[
+'#6366F1','#F59E0B','#10B981','#EF4444','#3B82F6',
+'#8B5CF6','#14B8A6','#F97316','#84CC16','#EC4899'
+]
+}]
+},
+
+options:{
+responsive:true,
+plugins:{
+legend:{
+position:'bottom',
+labels:{
+filter:function(legendItem,data){
+
+return legendItem.index < 5;
+
+}
+}
+}
+}
+}
+
+});
+
 </script>
+
+<div id="popup-pengesahan" class="popup-overlay">
+
+<div class="popup-box">
+
+<h3>Lembar Pengesahan</h3>
+
+<label>Kota</label>
+<input type="text" id="kota" value="">
+
+<label>Nama Petugas</label>
+<input type="text" id="petugas_nama">
+
+<label>Jabatan Petugas</label>
+<input type="text" id="petugas_jabatan">
+
+<label>NIP Petugas</label>
+<input type="text" id="petugas_nip">
+
+<hr>
+
+<label>Nama Pimpinan</label>
+<input type="text" id="kepala_nama">
+
+<label>Jabatan Pimpinan</label>
+<input type="text" id="kepala_jabatan">
+
+<label>NIP Pimpinan</label>
+<input type="text" id="kepala_nip">
+
+<hr>
+
+<label>
+<input type="checkbox" id="mode_tte">
+Gunakan TTe
+</label>
+
+<div style="margin-top:15px;text-align:right">
+
+<button onclick="prosesCetak()" class="btn btn-primary">
+Cetak
+</button>
+
+<button onclick="tutupFormPengesahan()" class="btn btn-default">
+Batal
+</button>
+
 </div>
+
+</div>
+</div>
+</div>
+
+<script>
+
+/* ===== FORM PENGESAHAN ===== */
+
+function bukaFormPengesahan(){
+document.getElementById("popup-pengesahan").style.display="flex";
+}
+
+function tutupFormPengesahan(){
+document.getElementById("popup-pengesahan").style.display="none";
+}
+
+function prosesCetak(){
+
+let tte = document.getElementById("mode_tte").checked;
+
+let kota = document.getElementById("kota").value;
+
+let pn = document.getElementById("petugas_nama").value;
+let pj = document.getElementById("petugas_jabatan").value;
+let pp = document.getElementById("petugas_nip").value;
+
+let kn = document.getElementById("kepala_nama").value;
+let kj = document.getElementById("kepala_jabatan").value;
+let kp = document.getElementById("kepala_nip").value;
+
+document.getElementById("kota_text").innerText = kota;
+
+document.getElementById("petugas_jabatan_text").innerText = pj;
+document.getElementById("kepala_jabatan_text").innerText = kj;
+
+if(tte){
+
+document.getElementById("petugas_identitas").style.display="none";
+document.getElementById("kepala_identitas").style.display="none";
+
+document.getElementById("tte_kepala").src="<?php echo SWB; ?>images/kepala.png";
+document.getElementById("tte_petugas").src="<?php echo SWB; ?>images/petugas.png";
+
+}else{
+
+document.getElementById("petugas_nama_text").innerText = pn;
+document.getElementById("petugas_nip_text").innerText = "NIP "+pp;
+
+document.getElementById("kepala_nama_text").innerText = kn;
+document.getElementById("kepala_nip_text").innerText = "NIP "+kp;
+
+}
+
+document.getElementById("lembar-pengesahan").style.display="block";
+
+tutupFormPengesahan();
+
+setTimeout(function(){
+window.print();
+},300);
+
+}
+
+window.onafterprint = function(){
+
+document.getElementById("lembar-pengesahan").style.display="none";
+
+}
+
+</script>
+
