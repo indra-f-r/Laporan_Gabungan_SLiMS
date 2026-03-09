@@ -1433,8 +1433,8 @@ if(tte){
 document.getElementById("petugas_identitas").style.display="none";
 document.getElementById("kepala_identitas").style.display="none";
 
-document.getElementById("tte_kepala").src="<?php echo SWB; ?>images/kepala.png";
-document.getElementById("tte_petugas").src="<?php echo SWB; ?>images/petugas.png";
+document.getElementById("tte_kepala").src="<?= SWB ?>images/kepala.png";
+document.getElementById("tte_petugas").src="<?= SWB ?>images/petugas.png";
 
 }else{
 
