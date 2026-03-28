@@ -1,119 +1,136 @@
-# Laporan Gabungan
+# 📊 Laporan Gabungan Perpustakaan (SLiMS Plugin)
 
-Plugin laporan Gabungan untuk **SLiMS (Senayan Library Management System)** yang menampilkan aktivitas perpustakaan secara visual dan informatif dalam satu halaman laporan.
+Plugin ini merupakan modul tambahan untuk SLiMS (Senayan Library Management System) yang digunakan untuk menampilkan laporan gabungan perpustakaan dalam bentuk dashboard statistik, grafik interaktif, tabel rekap data, serta laporan siap cetak yang dilengkapi dengan lembar pengesahan.
 
-Plugin ini membantu pustakawan melihat pola aktivitas peminjaman dan kunjungan perpustakaan berdasarkan rentang tanggal tertentu, dilengkapi dengan kalender aktivitas harian serta statistik anggota yang paling aktif.
-
----
-
-## Fitur
-
-Plugin ini menyediakan beberapa laporan statistik penting.
-
-### Statistik Anggota Aktif
-Menampilkan aktivitas anggota yang paling aktif dalam periode tertentu:
-
-- Top 10 anggota paling sering meminjam
-- Top pengunjung perpustakaan
-
-### Rekap Peminjaman
-- Total peminjaman pada periode yang dipilih
-- Perbandingan dengan periode sebelumnya
-- Persentase perubahan aktivitas peminjaman
-
-### Kalender Aktivitas Peminjaman
-Menampilkan **grid kalender aktivitas peminjaman per hari** yang dipisah berdasarkan bulan sehingga memudahkan analisis pola penggunaan koleksi.
-
-### Kalender Kunjungan Perpustakaan
-Menampilkan **grid kalender kunjungan perpustakaan** sehingga pustakawan dapat melihat hari-hari dengan tingkat kunjungan tinggi atau rendah.
-
-### Buku Paling Sering Dipinjam
-Menampilkan **Top 10 buku paling sering dipinjam** berdasarkan periode laporan.
+Plugin ini dirancang agar mudah digunakan oleh petugas, termasuk yang tidak memiliki latar belakang teknis, dengan tampilan yang sederhana namun informatif.
 
 ---
 
-## Tampilan Laporan
+## 🚀 Fitur Utama
 
-Plugin ini menghasilkan laporan dalam satu halaman yang terdiri dari:
+### 📈 Dashboard Statistik
+- Menampilkan total pengunjung  
+- Menampilkan total transaksi peminjaman  
+- Menampilkan jam sibuk pengunjung dan transaksi  
+- Kalender kunjungan harian  
 
-- Statistik Anggota Aktif
-- Rekap Peminjaman
-- Kalender Peminjaman
-- Kalender Kunjungan
-- Top Buku Terlaris
+### 📚 Analisis Koleksi
+- Menampilkan Top 10 buku terlaris  
+- Menampilkan data buku yang dibaca di tempat  
+- Rekap koleksi berdasarkan:  
+  - Klasifikasi (DDC)  
+  - Tipe koleksi  
+  - GMD (General Material Designation)  
 
-Seluruh tabel dan kalender dirancang agar **tidak terpotong ketika dicetak (print friendly)** sehingga cocok untuk laporan perpustakaan.
+### 📊 Visualisasi Data
+- Grafik interaktif menggunakan Chart.js  
+- Mendukung bar chart, line chart, dan doughnut chart  
+- Pewarnaan klasifikasi konsisten untuk memudahkan analisis  
 
----
-
-## Instalasi
-
-1. Download atau clone repository ini
-git clone https://github.com/indra-f-r/Laporan_Gabungan-slims.git
-2. Salin folder plugin ke direktori
-slims/plugins/
-Contoh struktur direktori:
-plugins/
-└── statistik_perpustakaan
-    ├── statistik_perpustakaan.plugin.php
-    └── index.php
-
-3. Masuk ke **SLiMS Admin Panel**
-Reporting → Statistik Perpustakaan
----
-
-## Cara Penggunaan
-
-1. Buka menu **Reporting → Laporan Perpustakaan**
-
-2. Tentukan **tanggal mulai** dan **tanggal akhir** laporan.
-
-3. Klik **Tampilkan** untuk melihat laporan statistik.
-
-4. Klik **Print** untuk mencetak laporan.
+### 🖨️ Cetak Laporan
+- Fitur cetak laporan langsung dari sistem  
+- Lembar pengesahan otomatis  
+- Dukungan tanda tangan:  
+  - Manual  
+  - Tanda Tangan Elektronik (TTE)  
+- Input data:  
+  - Nama petugas  
+  - NIP  
+  - Jabatan  
+  - Nama pimpinan  
 
 ---
 
-## Struktur Laporan
+## ⚙️ Instalasi
 
-Statistik Anggota Aktif  
-- Top Peminjam  
-- Top Pengunjung  
-Rekap Peminjaman  
-Kalender Peminjaman  
-Kalender Kunjungan  
-Top Buku Terlaris  
----
-
-## Kebutuhan Sistem
-
-- SLiMS 9 (Bulian) atau lebih baru
-- PHP 7.4 atau lebih baru
-- MySQL / MariaDB
+1. Download atau clone repository plugin ini  
+2. Copy folder plugin ke direktori /plugins/  
+3. Letakkan pada: slims/plugins/laporan_gabungan/  
+4. Pastikan terdapat file: index.php dan laporan_gabungan.plugin.php  
+5. Login ke SLiMS sebagai administrator  
+6. Masuk ke menu System → Plugins  
+7. Aktifkan plugin "Laporan Gabungan Perpustakaan"  
 
 ---
 
-## Tujuan Plugin
+## 🗂️ Struktur Folder
 
-Plugin ini dibuat untuk membantu pustakawan:
-
-- memahami pola penggunaan koleksi
-- menganalisis aktivitas anggota
-- memantau tingkat kunjungan perpustakaan
-- mempermudah penyusunan laporan statistik perpustakaan
+laporan_gabungan/  
+├── index.php  
+├── laporan_gabungan.plugin.php  
+└── (opsional assets tambahan)  
 
 ---
 
-## Kontribusi
+## 🧠 Cara Kerja
 
-Kontribusi sangat terbuka. Silakan:
+Plugin ini bekerja dengan mengambil data dari database SLiMS, kemudian mengolahnya menjadi informasi yang lebih mudah dipahami.
 
-- membuat issue
-- mengirim pull request
-- memberikan saran pengembangan
+Sumber data yang digunakan antara lain:
+- Data kunjungan pengunjung  
+- Data transaksi peminjaman  
+- Data bibliografi dan item koleksi  
+- Data klasifikasi (DDC)  
+- Data tipe koleksi dan GMD  
+
+Data tersebut kemudian diproses menjadi:
+- Statistik ringkasan  
+- Rekap berdasarkan kategori  
+- Data visual dalam bentuk grafik  
+
+Seluruh hasil ditampilkan dalam satu halaman dashboard yang terintegrasi.
 
 ---
 
-## Lisensi
+## 🖥️ Cara Penggunaan
 
-Plugin ini dirilis dengan lisensi **GNU** sehingga bebas digunakan, dimodifikasi, dan dikembangkan kembali.
+1. Masuk ke menu Reporting → Laporan Gabungan  
+2. Sistem akan menampilkan dashboard, grafik, dan tabel laporan  
+3. Untuk mencetak laporan:  
+   - Klik tombol cetak  
+   - Isi form pengesahan  
+   - Pilih jenis tanda tangan (manual atau TTE)  
+   - Klik cetak  
+
+---
+
+## 📌 Kebutuhan Sistem
+
+- SLiMS versi 9.x atau lebih baru  
+- PHP minimal versi 7.4  
+- MySQL atau MariaDB  
+- Browser modern (Chrome / Edge)  
+
+---
+
+## ⚠️ Catatan Penting
+
+- Plugin ini tidak mengubah core SLiMS  
+- Aman digunakan untuk production  
+- Disarankan melakukan backup sebelum instalasi  
+
+---
+
+## 🛠️ Pengembangan Lanjutan (Opsional)
+
+- Export ke PDF  
+- Export ke Excel  
+- Filter tanggal laporan  
+- Integrasi dashboard manajemen  
+- Optimasi performa query  
+
+---
+
+## 👨‍💻 Author
+
+Indra F. Rulliawan  
+Perpustakaan Wacana Teknologi  
+SMKN 1 Majalengka  
+
+---
+
+## 📝 Catatan
+
+Untuk kebutuhan pengelompokan kelas atau grup anggota, sistem secara default mengambil data dari field `pin` pada tabel `member`.
+
+Jika pada sistem Anda data kelas atau grup disimpan pada field lain, silakan lakukan penyesuaian pada file `index.php` dengan cara mencari penggunaan field `pin`, kemudian menggantinya dengan field yang sesuai (misalnya `group_type` atau field lainnya) agar data kelas atau grup dapat ditampilkan dengan benar sesuai struktur database yang digunakan.
