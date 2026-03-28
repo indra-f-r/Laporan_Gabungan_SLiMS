@@ -46,10 +46,11 @@ Plugin ini dirancang agar mudah digunakan oleh petugas, termasuk yang tidak memi
 1. Download atau clone repository plugin ini  
 2. Copy folder plugin ke direktori /plugins/  
 3. Letakkan pada: slims/plugins/laporan_gabungan/  
-4. Pastikan terdapat file: index.php dan laporan_gabungan.plugin.php  
-5. Login ke SLiMS sebagai administrator  
-6. Masuk ke menu System → Plugins  
-7. Aktifkan plugin "Laporan Gabungan Perpustakaan"  
+4. Pastikan terdapat file: index.php dan laporan_gabungan.plugin.php
+5. Siapkan File TTe, copy ke folder .../images, rename jadi "kepala.png" dan "petugas.png"
+6. Login ke SLiMS sebagai administrator  
+7. Masuk ke menu System → Plugins  
+8. Aktifkan plugin "Laporan Gabungan Perpustakaan"  
 
 ---
 
@@ -89,7 +90,7 @@ Seluruh hasil ditampilkan dalam satu halaman dashboard yang terintegrasi.
 3. Untuk mencetak laporan:  
    - Klik tombol cetak  
    - Isi form pengesahan  
-   - Pilih jenis tanda tangan (manual atau TTE)  
+   - Pilih jenis tanda tangan, manual atau TTE (jika klik TTe, pastikan file TTe sudah di copas ke folder .../images)
    - Klik cetak  
 
 ---
